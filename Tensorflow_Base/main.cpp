@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <random>
 #include <Windows.h>
+#include <iomanip>
+#include <sstream>
 
 #define ACTION_NUM 5
 
@@ -25,6 +27,14 @@ struct LabelMat
 	Action label;
 	Mat mat;
 };
+
+string floatToString(float input)
+{
+	stringstream stream;
+	stream << fixed << setprecision(2) << input;
+
+	return stream.str();
+}
 
 Mat getFrameMat(String path)
 {
@@ -89,26 +99,6 @@ vector<LabelMat> getFrameMats()
 	return frames;
 }
 
-int main()
-{
-	ActionMap[BrushingTeeth] = "BrushingTeeth";
-	ActionMap[CuttingInKitchen] = "CuttingInKitchen";
-	ActionMap[JumpingJack] = "JumpingJack";
-	ActionMap[Lunges] = "Lunges";
-	ActionMap[WallPushups] = "WallPushups";
-
-	vector<LabelMat> frameMats = getFrameMats();
-
-	return 0;
-}
-
-vector<LabelMat> getLabelledFrames()
-{
-	vector<LabelMat> labelledFrames;
-
-	return labelledFrames;
-}
-
 float neuralNetworkClassifier(vector<LabelMat> training, vector<LabelMat> testing)
 {
 	float accuracy = 0;
@@ -116,13 +106,69 @@ float neuralNetworkClassifier(vector<LabelMat> training, vector<LabelMat> testin
 	return accuracy;
 }
 
+void normaliseConfusionMatrix(Mat &confMat)
+{
+	for (int i = 0; i < confMat.rows; i++)
+	{
+		float tempTotal = 0;
+
+		for (int j = 0; j < confMat.cols; j++)
+		{
+			tempTotal += confMat.at<float>(i, j);
+		}
+
+		for (int j = 0; j < confMat.cols; j++)
+		{
+			confMat.at<float>(i, j) /= tempTotal;
+		}
+	}
+}
+
+void showConfusionMatrix(Mat confMat) // confMat should be of type CV_32FC1 with each value being the number of times that the actual label (row) was classified as a predicted label (column).
+{
+	if (confMat.rows != confMat.cols)
+	{
+		cout << "ERROR: Confusion matrix is not a square matrix" << endl;
+
+		return;
+	}
+
+	normaliseConfusionMatrix(confMat);
+
+	Size tileSize(100, 100);
+	Mat confusionOutput(tileSize * confMat.rows, CV_8UC3);
+
+	for (int i = 0; i < confMat.rows; i++)
+	{
+		for (int j = 0; j < confMat.cols; j++)
+		{
+			float confVal = confMat.at<float>(i, j);
+			Vec3b colour(0, 0, 0);
+			colour[0] =  confVal * 255;
+
+			for (int k = 0; k < tileSize.width; k++)
+			{
+				for (int l = 0; l < tileSize.height; l++)
+				{
+					confusionOutput.at<Vec3b>(i * tileSize.width + k, j * tileSize.height + l) = colour;
+				}
+			}
+
+			putText(confusionOutput, floatToString(confVal), Point2i(j * tileSize.width + (int)(tileSize.width / 3), i * tileSize.height + (int)(tileSize.height / 2)), FONT_HERSHEY_PLAIN, 1, Scalar(255, 255, 255));
+		}
+	}
+
+	imshow("Confusion Matrix", confusionOutput);
+	waitKey(0);
+}
+
 float crossValidation(int k)
 {
-	vector<LabelMat> labelledFrames = getLabelledFrames();
+	vector<LabelMat> labelledFrames = getFrameMats();
 
 	// Shuffle the labelledFrames.
 	random_device rd; // Seed.
-	auto rngShuffle = default_random_engine{rd()};
+	auto rngShuffle = default_random_engine{ rd() };
 	shuffle(begin(labelledFrames), end(labelledFrames), rngShuffle);
 	float accuracy = 0;
 	int foldSize = labelledFrames.size() / k;
@@ -149,4 +195,26 @@ float crossValidation(int k)
 	accuracy /= k;
 
 	return accuracy;
+}
+
+int main()
+{
+	ActionMap[BrushingTeeth] = "BrushingTeeth";
+	ActionMap[CuttingInKitchen] = "CuttingInKitchen";
+	ActionMap[JumpingJack] = "JumpingJack";
+	ActionMap[Lunges] = "Lunges";
+	ActionMap[WallPushups] = "WallPushups";
+
+	//vector<LabelMat> frameMats = getFrameMats();
+
+	Mat test = (Mat_<float>(5, 5) << 
+		20, 5, 4, 0, 2,
+		4, 18, 2, 1, 6,
+		0, 2, 28, 0, 1,
+		6, 12, 1, 12, 0,
+		0, 0, 0, 0, 31);
+
+	showConfusionMatrix(test);
+
+	return 0;
 }
