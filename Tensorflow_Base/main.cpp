@@ -1,8 +1,4 @@
-#include <opencv2/core/core.hpp>
-#include <opencv2/core/utility.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include "opencv2/calib3d.hpp"
-#include "opencv2/imgproc.hpp"
+#include "tfplus.h"
 
 #include <vector>
 #include <map>
@@ -13,11 +9,11 @@
 #include <Windows.h>
 #include <iomanip>
 #include <sstream>
+#define BATCH_SIZE 64
+#define EPOCHS 50
 
 #define ACTION_NUM 5
-
-using namespace cv;
-using namespace std;
+#define INPUT_SQ_SIZE 90
 
 enum Action { BrushingTeeth, CuttingInKitchen, JumpingJack, Lunges, WallPushups };
 map<Action, String>  ActionMap;
@@ -26,7 +22,46 @@ struct LabelMat
 {
 	Action label;
 	Mat mat;
+	Tensor tensor;
 };
+
+string type2str(int type) {
+	string r;
+
+	uchar depth = type & CV_MAT_DEPTH_MASK;
+	uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+	switch (depth)
+	{
+		case CV_8U:  r = "8U"; break;
+		case CV_8S:  r = "8S"; break;
+		case CV_16U: r = "16U"; break;
+		case CV_16S: r = "16S"; break;
+		case CV_32S: r = "32S"; break;
+		case CV_32F: r = "32F"; break;
+		case CV_64F: r = "64F"; break;
+		default:     r = "User"; break;
+	}
+
+	r += "C";
+	r += (chans + '0');
+
+	return r;
+}
+
+Tensor cvtCVMatToTensor(Mat input)
+{
+	Tensor input_tensor(DT_FLOAT, TensorShape({ 1, input.rows, input.cols, input.channels() }));
+
+	float *p = input_tensor.flat<float>().data();
+
+	Mat tensorMat(input.rows, input.cols, CV_32FC3, p);
+	input.convertTo(tensorMat, CV_32FC3);
+	
+	cout << input_tensor.DebugString() << endl;
+
+	return input_tensor;
+}
 
 string floatToString(float input)
 {
@@ -86,9 +121,18 @@ vector<LabelMat> getFrameMats()
 			LabelMat lm;
 			lm.label = it->first;
 
-			Size size(90, 90);
+			cv::Size size(INPUT_SQ_SIZE, INPUT_SQ_SIZE);
 			Mat frame = getFrameMat(full_file_name);
+
+			frame.convertTo(frame, CV_32FC3);
 			resize(frame, lm.mat, size);
+
+			cout << type2str(lm.mat.type()) << endl;
+			cout << lm.mat.rows << endl;
+			cout << lm.mat.cols << endl;
+			cout << lm.mat.channels() << endl;
+
+			lm.tensor = cvtCVMatToTensor(lm.mat);
 
 			frames.push_back(lm);
 		} while (FindNextFile(dir, &file_data));
