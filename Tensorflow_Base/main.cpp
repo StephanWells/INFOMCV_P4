@@ -8,6 +8,8 @@
 #include <map>
 #include <math.h>
 #include <iostream>
+#include <algorithm>
+#include <random>
 #include <Windows.h>
 
 #define ACTION_NUM 5
@@ -20,7 +22,7 @@ map<Action, String>  ActionMap;
 
 struct LabelMat
 {
-	String label;
+	Action label;
 	Mat mat;
 };
 
@@ -98,4 +100,53 @@ int main()
 	vector<LabelMat> frameMats = getFrameMats();
 
 	return 0;
+}
+
+vector<labelMat> getLabelledFrames()
+{
+	vector<labelMat> labelledFrames;
+
+	return labelledFrames;
+}
+
+float neuralNetworkClassifier(vector<labelMat> training, vector<labelMat> testing)
+{
+	float accuracy = 0;
+	// Classify here.
+	return accuracy;
+}
+
+float crossValidation(int k)
+{
+	vector<labelMat> labelledFrames = getLabelledFrames();
+
+	// Shuffle the labelledFrames.
+	random_device rd; // Seed.
+	auto rngShuffle = default_random_engine{rd()};
+	shuffle(begin(labelledFrames), end(labelledFrames), rngShuffle);
+	float accuracy = 0;
+	int foldSize = labelledFrames.size() / k;
+	vector<labelMat>::const_iterator first = labelledFrames.begin();
+	vector<labelMat>::const_iterator last = labelledFrames.end();
+
+	for (int i = 0; i < k; i++)
+	{
+		// Take all labelled frames to the left and right of one of the folds.
+		int endOffset = i < k - 1 ? 1 : 0;
+		vector<labelMat> left(first, first + foldSize * i);
+		vector<labelMat> right(first + foldSize * (i + 1) + endOffset, last);
+		vector<labelMat> trainingFrames;
+		trainingFrames.insert(trainingFrames.end(), left.begin(), left.end());
+		trainingFrames.insert(trainingFrames.end(), right.begin(), right.end());
+
+		// Take the fold and use it for validation.
+		vector<labelMat> validationFrames;
+		validationFrames.insert(validationFrames.end(), first + foldSize * i, first + foldSize * (i + 1));
+
+		accuracy += neuralNetworkClassifier(trainingFrames, validationFrames);
+	}
+
+	accuracy /= k;
+
+	return accuracy;
 }
