@@ -1,14 +1,4 @@
 #include "tfplus.h"
-
-#include <vector>
-#include <map>
-#include <math.h>
-#include <iostream>
-#include <algorithm>
-#include <random>
-#include <Windows.h>
-#include <iomanip>
-#include <sstream>
 #define BATCH_SIZE 64
 #define EPOCHS 50
 
@@ -179,7 +169,7 @@ void showConfusionMatrix(Mat confMat) // confMat should be of type CV_32FC1 with
 
 	normaliseConfusionMatrix(confMat);
 
-	Size tileSize(100, 100);
+	cv::Size tileSize(100, 100);
 	Mat confusionOutput(tileSize * confMat.rows, CV_8UC3);
 
 	for (int i = 0; i < confMat.rows; i++)
