@@ -74,7 +74,7 @@ vector<LabelMat> getFrameMats()
 				continue;
 			
 			LabelMat lm;
-			lm.label = it->second;
+			lm.label = it->first;
 
 			Size size(90, 90);
 			Mat frame = getFrameMat(full_file_name);
@@ -102,14 +102,14 @@ int main()
 	return 0;
 }
 
-vector<labelMat> getLabelledFrames()
+vector<LabelMat> getLabelledFrames()
 {
-	vector<labelMat> labelledFrames;
+	vector<LabelMat> labelledFrames;
 
 	return labelledFrames;
 }
 
-float neuralNetworkClassifier(vector<labelMat> training, vector<labelMat> testing)
+float neuralNetworkClassifier(vector<LabelMat> training, vector<LabelMat> testing)
 {
 	float accuracy = 0;
 	// Classify here.
@@ -118,7 +118,7 @@ float neuralNetworkClassifier(vector<labelMat> training, vector<labelMat> testin
 
 float crossValidation(int k)
 {
-	vector<labelMat> labelledFrames = getLabelledFrames();
+	vector<LabelMat> labelledFrames = getLabelledFrames();
 
 	// Shuffle the labelledFrames.
 	random_device rd; // Seed.
@@ -126,21 +126,21 @@ float crossValidation(int k)
 	shuffle(begin(labelledFrames), end(labelledFrames), rngShuffle);
 	float accuracy = 0;
 	int foldSize = labelledFrames.size() / k;
-	vector<labelMat>::const_iterator first = labelledFrames.begin();
-	vector<labelMat>::const_iterator last = labelledFrames.end();
+	vector<LabelMat>::const_iterator first = labelledFrames.begin();
+	vector<LabelMat>::const_iterator last = labelledFrames.end();
 
 	for (int i = 0; i < k; i++)
 	{
 		// Take all labelled frames to the left and right of one of the folds.
 		int endOffset = i < k - 1 ? 1 : 0;
-		vector<labelMat> left(first, first + foldSize * i);
-		vector<labelMat> right(first + foldSize * (i + 1) + endOffset, last);
-		vector<labelMat> trainingFrames;
+		vector<LabelMat> left(first, first + foldSize * i);
+		vector<LabelMat> right(first + foldSize * (i + 1) + endOffset, last);
+		vector<LabelMat> trainingFrames;
 		trainingFrames.insert(trainingFrames.end(), left.begin(), left.end());
 		trainingFrames.insert(trainingFrames.end(), right.begin(), right.end());
 
 		// Take the fold and use it for validation.
-		vector<labelMat> validationFrames;
+		vector<LabelMat> validationFrames;
 		validationFrames.insert(validationFrames.end(), first + foldSize * i, first + foldSize * (i + 1));
 
 		accuracy += neuralNetworkClassifier(trainingFrames, validationFrames);
