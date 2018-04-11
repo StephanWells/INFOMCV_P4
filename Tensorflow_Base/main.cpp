@@ -1,4 +1,4 @@
-#include "tfplus.h"
+#include "tfcpp.h"
 #define BATCH_SIZE 64
 #define EPOCHS 50
 
@@ -15,7 +15,7 @@ struct LabelMat
 	Tensor tensor;
 };
 
-string type2str(int type) {
+string typeToString(int type) {
 	string r;
 
 	uchar depth = type & CV_MAT_DEPTH_MASK;
@@ -39,7 +39,15 @@ string type2str(int type) {
 	return r;
 }
 
-Tensor cvtCVMatToTensor(Mat input)
+string floatToString(float input)
+{
+	stringstream stream;
+	stream << fixed << setprecision(2) << input;
+
+	return stream.str();
+}
+
+Tensor cvMatToTensor(Mat input)
 {
 	Tensor input_tensor(DT_FLOAT, TensorShape({ 1, input.rows, input.cols, input.channels() }));
 
@@ -51,14 +59,6 @@ Tensor cvtCVMatToTensor(Mat input)
 	cout << input_tensor.DebugString() << endl;
 
 	return input_tensor;
-}
-
-string floatToString(float input)
-{
-	stringstream stream;
-	stream << fixed << setprecision(2) << input;
-
-	return stream.str();
 }
 
 Mat getFrameMat(String path)
@@ -117,14 +117,16 @@ vector<LabelMat> getFrameMats()
 			frame.convertTo(frame, CV_32FC3);
 			resize(frame, lm.mat, size);
 
-			cout << type2str(lm.mat.type()) << endl;
+			cout << typeToString(lm.mat.type()) << endl;
 			cout << lm.mat.rows << endl;
 			cout << lm.mat.cols << endl;
 			cout << lm.mat.channels() << endl;
 
-			lm.tensor = cvtCVMatToTensor(lm.mat);
+			lm.tensor = cvMatToTensor(lm.mat);
 
 			frames.push_back(lm);
+
+			return frames;
 		} while (FindNextFile(dir, &file_data));
 
 		FindClose(dir);
@@ -231,6 +233,96 @@ float crossValidation(int k)
 	return accuracy;
 }
 
+void buildNetwork()
+{
+	Scope scope = Scope::NewRootScope();
+
+	auto x = Placeholder(scope, DT_FLOAT);
+	auto y = Placeholder(scope, DT_FLOAT);
+
+	// weights init
+	auto w1 = Variable(scope, { 3, 3 }, DT_FLOAT);
+	auto assign_w1 = Assign(scope, w1, RandomNormal(scope, { 3, 3 }, DT_FLOAT));
+
+	auto w2 = Variable(scope, { 3, 2 }, DT_FLOAT);
+	auto assign_w2 = Assign(scope, w2, RandomNormal(scope, { 3, 2 }, DT_FLOAT));
+
+	auto w3 = Variable(scope, { 2, 1 }, DT_FLOAT);
+	auto assign_w3 = Assign(scope, w3, RandomNormal(scope, { 2, 1 }, DT_FLOAT));
+
+	// bias init
+	auto b1 = Variable(scope, { 1, 3 }, DT_FLOAT);
+	auto assign_b1 = Assign(scope, b1, RandomNormal(scope, { 1, 3 }, DT_FLOAT));
+
+	auto b2 = Variable(scope, { 1, 2 }, DT_FLOAT);
+	auto assign_b2 = Assign(scope, b2, RandomNormal(scope, { 1, 2 }, DT_FLOAT));
+
+	auto b3 = Variable(scope, { 1, 1 }, DT_FLOAT);
+	auto assign_b3 = Assign(scope, b3, RandomNormal(scope, { 1, 1 }, DT_FLOAT));
+
+	// layers
+	auto layer_1 = Tanh(scope, Add(scope, MatMul(scope, x, w1), b1));
+	auto layer_2 = Tanh(scope, Add(scope, MatMul(scope, layer_1, w2), b2));
+	auto layer_3 = Tanh(scope, Add(scope, MatMul(scope, layer_2, w3), b3));
+
+	// regularization
+	auto regularization = AddN(scope, initializer_list<Input>
+	{
+		L2Loss(scope, w1),
+		L2Loss(scope, w2),
+		L2Loss(scope, w3)
+	});
+
+	// loss calculation
+	auto loss = Add(scope,
+		ReduceMean(scope, Square(scope, Sub(scope, layer_3, y)), { 0, 1 }),
+		Mul(scope, Cast(scope, 0.01, DT_FLOAT), regularization));
+
+	// add the gradients operations to the graph
+	std::vector<Output> grad_outputs;
+	TF_CHECK_OK(AddSymbolicGradients(scope, { loss }, { w1, w2, w3, b1, b2, b3 }, &grad_outputs));
+
+	// update the weights and bias using gradient descent
+	auto apply_w1 = ApplyGradientDescent(scope, w1, Cast(scope, 0.01, DT_FLOAT), { grad_outputs[0] });
+	auto apply_w2 = ApplyGradientDescent(scope, w2, Cast(scope, 0.01, DT_FLOAT), { grad_outputs[1] });
+	auto apply_w3 = ApplyGradientDescent(scope, w3, Cast(scope, 0.01, DT_FLOAT), { grad_outputs[2] });
+	auto apply_b1 = ApplyGradientDescent(scope, b1, Cast(scope, 0.01, DT_FLOAT), { grad_outputs[3] });
+	auto apply_b2 = ApplyGradientDescent(scope, b2, Cast(scope, 0.01, DT_FLOAT), { grad_outputs[4] });
+	auto apply_b3 = ApplyGradientDescent(scope, b3, Cast(scope, 0.01, DT_FLOAT), { grad_outputs[5] });
+
+	ClientSession session(scope);
+	std::vector<Tensor> outputs;
+
+	// init the weights and biases by running the assigns nodes once
+	TF_CHECK_OK(session.Run({ assign_w1, assign_w2, assign_w3, assign_b1, assign_b2, assign_b3 }, nullptr));
+
+}
+
+void buildCNN(LabelMat input)
+{
+	Scope root = Scope::NewRootScope();
+
+	Tensor input_layer = input.tensor;
+
+	//Variable = tensor that persists across steps {width, height, input depth, output depth}
+	//Assign = update ref (2nd para) by assigning value (3rd para)
+
+	auto filter1 = Variable(root, { 5, 5, 3, 10 }, DT_FLOAT);
+	Assign(root, filter1, TruncatedNormal(root, { 5, 5, 3, 3 }, DT_FLOAT));
+	auto conv1 = Conv2D(root, input_layer, filter1, { 1, 1, 1, 1 }, "SAME");
+	auto elu1 = Elu(root, conv1);
+	auto maxpool1 = MaxPool(root, elu1, { 1, 2, 2, 1 }, { 1, 1, 1, 1 }, "SAME");
+
+	// change 7
+	auto flatten = Reshape(root, maxpool1, {-1, 7 * 7 * 10});
+
+	vector<Tensor> outputs;
+	ClientSession session(root);
+	TF_CHECK_OK(session.Run({ flatten }, &outputs));
+
+	cout << outputs[0].DebugString();
+}
+
 int main()
 {
 	ActionMap[BrushingTeeth] = "BrushingTeeth";
@@ -239,16 +331,18 @@ int main()
 	ActionMap[Lunges] = "Lunges";
 	ActionMap[WallPushups] = "WallPushups";
 
-	//vector<LabelMat> frameMats = getFrameMats();
+	vector<LabelMat> frameMats = getFrameMats();
 
-	Mat test = (Mat_<float>(5, 5) << 
+	buildCNN(frameMats[0]);
+
+	/*Mat test = (Mat_<float>(5, 5) << 
 		20, 5, 4, 0, 2,
 		4, 18, 2, 1, 6,
 		0, 2, 28, 0, 1,
 		6, 12, 1, 12, 0,
 		0, 0, 0, 0, 31);
-
-	showConfusionMatrix(test);
+		 
+	showConfusionMatrix(test);*/
 
 	return 0;
 }
