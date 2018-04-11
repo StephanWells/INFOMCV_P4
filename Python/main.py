@@ -14,20 +14,20 @@ from enum import Enum
 import numpy as np
 import tensorflow as tf
 import cv2 as cv
+import os
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
 class Action(Enum):
-    BrushingTeeth = 'BrushingTeeth'
-    CuttingInKitchen = 'CuttingInKitchen'
-    JumpingJack = 'JumpingJack'
-    Lunges = 'Lunges'
-    WallPushups = 'WallPushups'    
+    BrushingTeeth = 1
+    CuttingInKitchen = 2
+    JumpingJack = 3
+    Lunges = 4
+    WallPushups = 5
 
 class LabelMat:
     label = None
     mat = None
-    tensor = None
 
 def getFrameMat(path):
     vid = cv.VideoCapture(path)
@@ -45,8 +45,28 @@ def getFrameMat(path):
     cv.destroyAllWindows()
     return frame
 
+def getFrameMats():
+    basepath = 'data/ucf-101/'
+    frames = []
+    
+    for action in Action:
+        datapath = basepath + action.name + '/'
+        
+        for filename in os.listdir(datapath):
+            lm = LabelMat()
+            lm.label = action
+            
+            frame = getFrameMat(datapath + filename)
+            lm.mat = cv.resize(frame, (90, 90))
+            
+            print(lm.mat.size)
+            
+            frames.append(lm)
+    
+    return frames
+
 def main():
-    getFrameMat('data/ucf-101/BrushingTeeth/v_BrushingTeeth_g01_c01.avi')
+    getFrameMats()
     
     
 if __name__ == "__main__":
