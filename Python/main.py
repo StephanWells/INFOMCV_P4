@@ -36,15 +36,24 @@ def getFrameMat(path):
     
     #cv.namedWindow('test', cv.WINDOW_AUTOSIZE)
     #cv.imshow('test', frame)
-    #cv.waitKey(0)
-    
+    #cv.waitKey(0)    
+    #cv.destroyAllWindows()    
     #print(str(np.size(frame, 0)) + ',' + str(np.size(frame, 1)) + os.linesep)
+    
     vid.release()
-    #cv.destroyAllWindows()
     return frame
 
-def getFrameMats():
-    basepath = 'data/ucf-101/'
+def getFrameMatAt(path, pos):
+    vid = cv.VideoCapture(path)
+    
+    vid.set(cv.CAP_PROP_POS_FRAMES, pos)
+    
+    _, frame = vid.read()
+    
+    vid.release()
+    return frame
+
+def getFrameMats(basepath):
     labels = []
     mats = []
     
@@ -53,19 +62,40 @@ def getFrameMats():
         datapath = basepath + action.name + '/'
         
         for filename in os.listdir(datapath):
-            labels.append(action.value)
-            
             frame = getFrameMat(datapath + filename)
-            mat = cv.resize(frame, (90, 90))           
-            mats.append(np.float32(mat))
+            mat = cv.resize(frame, (90, 90))
+            
+            mat_orig = np.divide(np.float32(mat), 255) 
+            labels.append(action.value)
+            mats.append(mat_orig)
+            
+            mat_flip = cv.flip(mat_orig, 1)            
+            labels.append(action.value)
+            mats.append(mat_flip)
+            
+            #cv.namedWindow('testorig', cv.WINDOW_AUTOSIZE)
+            #cv.imshow('testorig', mat_orig)
+            #cv.namedWindow('testflip', cv.WINDOW_AUTOSIZE)
+            #cv.imshow('testflip', mat_flip)
+            #cv.waitKey(0)
     
     print("DONE.")
     return mats, labels
 
 def main():
-    frame_mats, frame_labels = getFrameMats()
-    train_data = np.asarray(frame_mats)
-    train_labels = np.asarray(frame_labels)
+    ucf_mats, ucf_labels = getFrameMats('data/ucf-101/')
+    train_data = np.asarray(ucf_mats)
+    train_labels = np.asarray(ucf_labels)
+    
+    print(train_data)
+    print(train_labels)
+    
+    own_mats, own_labels = getFrameMats('data/own/')
+    eval_data = np.asarray(own_mats)
+    eval_labels = np.asarray(own_labels)
+    
+    print(eval_data)
+    print(eval_labels)
     
     classifier = tf.estimator.Estimator(model_fn=cnn.cnn_model, model_dir="/tmp/cnn_model")
     
@@ -81,8 +111,17 @@ def main():
     
     classifier.train(
             input_fn=train_input,
-            steps=20000,
-            hooks=[logging_hook])    
+            steps=10000,
+            hooks=[logging_hook])
+
+    eval_input = tf.estimator.inputs.numpy_input_fn(
+            x={"x": eval_data},
+            y=eval_labels,
+            num_epochs=1,
+            shuffle=False)
+    
+    eval_results = classifier.evaluate(input_fn=eval_input)
+    print(eval_results)    
     
 if __name__ == "__main__":
     main()
