@@ -141,11 +141,10 @@ def main():
 #    
 #    print(eval_data)
 #    print(eval_labels)
-    #accuracy = val.crossValidation(2)
-    #print(accuracy)
-    test = np.array([[20, 1, 3, 5, 1], [4, 19, 0, 1, 6], [0, 1, 25, 3, 1], [1, 4, 8, 15, 2], [0, 0, 2, 1, 27]], dtype=float)
+    val.crossValidation(2)
     
-    val.outputConfusionMatrix(test)
+    cv.waitKey(0)
+    cv.destroyAllWindows()
     
 if __name__ == "__main__":
     main()

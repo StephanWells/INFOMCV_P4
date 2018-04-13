@@ -5,7 +5,8 @@ Created on Thu Apr 12 21:46:11 2018
 @author: steph
 """
 
-import numpy as np, cv2
+import numpy as np
+import cv2 as cv
 import random
 import main as m
 
@@ -14,7 +15,6 @@ def crossValidation(k):
     label_data = list(zip(data, labels))
     random.shuffle(label_data)
     data, labels = list(zip(*label_data))
-    accuracy = 0
     fold_size = len(data) // k
     
     basepath = "/Programs/Repos/INFOMCV_P4/Python/tmp/cnn_model"
@@ -40,22 +40,33 @@ def crossValidation(k):
         eval_data.extend(data[fold_size * i:fold_size * (i + 1)])
         eval_labels.extend(labels[fold_size * i:fold_size * (i + 1)])
         
-        train_data = np.asarray(train_data)
-        train_labels = np.asarray(train_labels)
-        eval_data = np.asarray(eval_data)
-        eval_labels = np.asarray(eval_labels)
+        train_data_arr = np.asarray(train_data)
+        train_labels_arr = np.asarray(train_labels)
+        eval_data_arr = np.asarray(eval_data)
+        eval_labels_arr = np.asarray(eval_labels)
         
-        m.train(train_data, train_labels, model_path)
-        results = m.predict(eval_data, eval_labels, model_path)
+        m.train(train_data_arr, train_labels_arr, model_path)
+        results = m.predict(eval_data_arr, eval_labels_arr, model_path)
+        
+        actual_labels = []
+        
+        for result in results:
+            actual_labels.append(result['classes'])
+            
+        conf_mat = generateConfusionMatrix(eval_labels, actual_labels)
+        outputConfusionMatrix(conf_mat)
         
         print('Fold: ' + str(i))
-    
-    accuracy = accuracy / k
-    
-    return accuracy
 
 def generateConfusionMatrix(predicted_labels, actual_labels):
-    return
+    conf_mat = np.zeros((m.BATCH_SIZE, m.BATCH_SIZE, 1))
+    
+    for i in range(0, actual_labels):
+        for j in range(0, predicted_labels):
+            if actual_labels[i] == predicted_labels[j]:
+                conf_mat[i, j] += 1
+    
+    return conf_mat
 
 def normaliseConfusionMatrix(conf_mat):
     for i in range(0, conf_mat.shape[0]):
@@ -90,14 +101,12 @@ def outputConfusionMatrix(conf_mat):
             
             text_val = "{:.2f}".format(conf_val)
             text_location = (j * tile_size + (tile_size // 3), i * tile_size + (tile_size // 2))
-            text_font = cv2.FONT_HERSHEY_PLAIN
+            text_font = cv.FONT_HERSHEY_PLAIN
             text_scale = 1
             text_colour = (255, 255, 255)
             text_thickness = 1
-            text_line = cv2.LINE_AA
+            text_line = cv.LINE_AA
             
-            cv2.putText(conf_output, text_val, text_location, text_font, text_scale, text_colour, text_thickness, text_line)
+            cv.putText(conf_output, text_val, text_location, text_font, text_scale, text_colour, text_thickness, text_line)
             
-    cv2.imshow('Confusion Matrix', conf_output)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    cv.imshow('Confusion Matrix', conf_output)
