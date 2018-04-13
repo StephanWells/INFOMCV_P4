@@ -19,7 +19,7 @@ import cnn
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
-BATCH_SIZE = 10
+BATCH_SIZE = 5
 
 class Action(Enum):
     BrushingTeeth = 0
@@ -113,7 +113,7 @@ def main():
     
     classifier.train(
             input_fn=train_input,
-            steps=10000,
+            steps=20000,
             hooks=[logging_hook])
 
     eval_input = tf.estimator.inputs.numpy_input_fn(
