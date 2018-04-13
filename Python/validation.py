@@ -5,7 +5,7 @@ Created on Thu Apr 12 21:46:11 2018
 @author: steph
 """
 
-import numpy as np
+import numpy as np, cv2
 import random
 import main as m
 
@@ -48,3 +48,51 @@ def crossValidation(k):
     accuracy = accuracy / k
     
     return accuracy
+
+def generateConfusionMatrix(predicted_labels, actual_labels):
+    return
+
+def normaliseConfusionMatrix(conf_mat):
+    for i in range(0, conf_mat.shape[0]):
+        temp_total = 0;
+        
+        for j in range(0, conf_mat.shape[1]):
+            temp_total = temp_total + conf_mat[i, j]
+        
+        for j in range(0, conf_mat.shape[1]):
+            conf_mat[i, j] = np.float32(conf_mat[i, j]) / np.float32(temp_total)
+    
+    return conf_mat
+
+def outputConfusionMatrix(conf_mat):
+    if conf_mat.shape[0] != conf_mat.shape[1]:
+        print('ERROR: Confusion matrix is not a square matrix')
+        
+        return
+    
+    tile_size = 100
+    conf_mat = normaliseConfusionMatrix(conf_mat)
+    conf_output = np.zeros((tile_size * conf_mat.shape[0], tile_size * conf_mat.shape[0], 3))
+    
+    for i in range(0, conf_mat.shape[0]):
+        for j in range(0, conf_mat.shape[1]):
+            conf_val = conf_mat[i, j]
+            colour = np.array([conf_val, 0, 0])
+            
+            for k in range(0, tile_size):
+                for l in range(0, tile_size):
+                    conf_output[i * tile_size + k, j * tile_size + l] = colour
+            
+            text_val = "{:.2f}".format(conf_val)
+            text_location = (j * tile_size + (tile_size // 3), i * tile_size + (tile_size // 2))
+            text_font = cv2.FONT_HERSHEY_PLAIN
+            text_scale = 1
+            text_colour = (255, 255, 255)
+            text_thickness = 1
+            text_line = cv2.LINE_AA
+            
+            cv2.putText(conf_output, text_val, text_location, text_font, text_scale, text_colour, text_thickness, text_line)
+            
+    cv2.imshow('Confusion Matrix', conf_output)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
