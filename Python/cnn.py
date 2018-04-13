@@ -12,6 +12,9 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
+LEARNING_RATE = 0.001
+DROPOUT_RATE = 0.4
+
 def cnn_model(features, labels, mode):
     inputLayer = tf.reshape(features["x"], [-1, 90, 90, 3])
     
@@ -39,7 +42,7 @@ def cnn_model(features, labels, mode):
     
     droplayer = tf.layers.dropout(
             inputs=dense,
-            rate=0.4,
+            rate=DROPOUT_RATE,
             training=mode == tf.estimator.ModeKeys.TRAIN)
     
     logits = tf.layers.dense(inputs=droplayer, units=5)
@@ -55,7 +58,7 @@ def cnn_model(features, labels, mode):
     loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
     
     if mode == tf.estimator.ModeKeys.TRAIN:
-        optimiser = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+        optimiser = tf.train.GradientDescentOptimizer(learning_rate=LEARNING_RATE)
         train_op = optimiser.minimize(loss=loss, global_step=tf.train.get_global_step())
         return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
     

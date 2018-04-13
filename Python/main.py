@@ -19,6 +19,8 @@ import cnn
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
+BATCH_SIZE = 10
+
 class Action(Enum):
     BrushingTeeth = 0
     CuttingInKitchen = 1
@@ -105,7 +107,7 @@ def main():
     train_input = tf.estimator.inputs.numpy_input_fn(
             x={"x": train_data},
             y=train_labels,
-            batch_size=10,
+            batch_size=BATCH_SIZE,
             num_epochs=None,
             shuffle=True)
     
