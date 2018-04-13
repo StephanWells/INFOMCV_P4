@@ -56,12 +56,12 @@ def crossValidation(k):
             predicted_labels.append(result['classes'])
             
         conf_mat = generateConfusionMatrix(eval_labels, predicted_labels)
-        outputConfusionMatrix(conf_mat)        
-        np.add(overall_conf_mat, conf_mat)  
+        np.add(overall_conf_mat, conf_mat)
         
         print('Fold: ' + str(i))
         
     averaged_conf_mat = np.divide(np.float32(overall_conf_mat), k)
+    outputConfusionMatrix(averaged_conf_mat) 
     generatePerfMeasures(averaged_conf_mat)
 
 def generatePerfMeasures(conf_mat):
@@ -127,7 +127,7 @@ def outputConfusionMatrix(conf_mat):
                 for l in range(0, tile_size):
                     conf_output[i * tile_size + k, j * tile_size + l] = colour
             
-            text_val = "{:.2f}".format(conf_val)
+            text_val = str(round(float(conf_val), 2))
             text_location = (j * tile_size + (tile_size // 3), i * tile_size + (tile_size // 2))
             text_font = cv.FONT_HERSHEY_PLAIN
             text_scale = 1
