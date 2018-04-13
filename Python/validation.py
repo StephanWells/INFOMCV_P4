@@ -56,7 +56,7 @@ def crossValidation(k):
             predicted_labels.append(result['classes'])
             
         conf_mat = generateConfusionMatrix(eval_labels, predicted_labels)
-        np.add(overall_conf_mat, conf_mat)
+        overall_conf_mat = np.add(overall_conf_mat, conf_mat)       
         
         print('Fold: ' + str(i))
         

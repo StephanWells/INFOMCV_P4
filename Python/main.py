@@ -20,7 +20,7 @@ import validation as val
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
-BATCH_SIZE = 5
+BATCH_SIZE = 10
 CLASS_SIZE = 5
 
 class Action(Enum):
@@ -73,9 +73,9 @@ def getFrameMats(basepath):
             labels.append(action.value)
             mats.append(mat_orig)
             
-            mat_flip = cv.flip(mat_orig, 1)            
-            labels.append(action.value)
-            mats.append(mat_flip)
+            #mat_flip = cv.flip(mat_orig, 1)            
+            #labels.append(action.value)
+            #mats.append(mat_flip)
             
             #cv.namedWindow('testorig', cv.WINDOW_AUTOSIZE)
             #cv.imshow('testorig', mat_orig)
@@ -101,7 +101,7 @@ def train(train_data, train_labels, model_path):
     
     classifier.train(
             input_fn=train_input,
-            steps=500,
+            steps=10000,
             hooks=[logging_hook])
     
 def evaluate(eval_data, eval_labels, model_path):
