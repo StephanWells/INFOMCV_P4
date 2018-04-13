@@ -16,6 +16,7 @@ import tensorflow as tf
 import cv2 as cv
 import os
 import cnn
+import validation as val
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -82,21 +83,7 @@ def getFrameMats(basepath):
     print("DONE.")
     return mats, labels
 
-def main():
-    ucf_mats, ucf_labels = getFrameMats('data/ucf-101/')
-    train_data = np.asarray(ucf_mats)
-    train_labels = np.asarray(ucf_labels)
-    
-    print(train_data)
-    print(train_labels)
-    
-    own_mats, own_labels = getFrameMats('data/own/')
-    eval_data = np.asarray(own_mats)
-    eval_labels = np.asarray(own_labels)
-    
-    print(eval_data)
-    print(eval_labels)
-    
+def classify(train_data, train_labels, eval_data, eval_labels):
     classifier = tf.estimator.Estimator(model_fn=cnn.cnn_model, model_dir="/tmp/cnn_model")
     
     log_tensors = {"probabilities": "softmax_tensor"}
@@ -121,7 +108,24 @@ def main():
             shuffle=False)
     
     eval_results = classifier.evaluate(input_fn=eval_input)
-    print(eval_results)    
+    print(eval_results)
+
+def main():
+#    ucf_mats, ucf_labels = getFrameMats('data/ucf-101/')
+#    train_data = np.asarray(ucf_mats)
+#    train_labels = np.asarray(ucf_labels)
+#    
+#    print(train_data)
+#    print(train_labels)
+#    
+#    own_mats, own_labels = getFrameMats('data/own/')
+#    eval_data = np.asarray(own_mats)
+#    eval_labels = np.asarray(own_labels)
+#    
+#    print(eval_data)
+#    print(eval_labels)
+    accuracy = val.crossValidation(2)
+    print(accuracy)
     
 if __name__ == "__main__":
     main()
