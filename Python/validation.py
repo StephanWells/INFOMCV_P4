@@ -9,6 +9,7 @@ import numpy as np
 import cv2 as cv
 import random
 import main as m
+import os
 
 def crossValidation(k):
     data, labels = m.getFrameMats('data/ucf-101/')
@@ -84,7 +85,7 @@ def generatePerfMeasures(conf_mat):
         
         outFile.write("Precision: " + str(precision) + ";")
         outFile.write("Recall: " + str(recall) + ";")
-        outFile.write("F-Score: " + str(fscore) + ";")
+        outFile.write("F-Score: " + str(fscore) + os.linesep)
     
     outFile.close()
 
