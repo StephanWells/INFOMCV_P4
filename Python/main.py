@@ -20,6 +20,8 @@ import validation as val
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
+BATCH_SIZE = 5
+
 class Action(Enum):
     BrushingTeeth = 0
     CuttingInKitchen = 1
@@ -92,13 +94,13 @@ def classify(train_data, train_labels, eval_data, eval_labels):
     train_input = tf.estimator.inputs.numpy_input_fn(
             x={"x": train_data},
             y=train_labels,
-            batch_size=10,
+            batch_size=BATCH_SIZE,
             num_epochs=None,
             shuffle=True)
     
     classifier.train(
             input_fn=train_input,
-            steps=10000,
+            steps=20000,
             hooks=[logging_hook])
 
     eval_input = tf.estimator.inputs.numpy_input_fn(

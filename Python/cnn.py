@@ -12,12 +12,15 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
+LEARNING_RATE = 0.1
+DROPOUT_RATE = 0.2
+
 def cnn_model(features, labels, mode):
     inputLayer = tf.reshape(features["x"], [-1, 90, 90, 3])
     
     conv1 = tf.layers.conv2d(
             inputs=inputLayer,
-            filters=16,
+            filters=32,
             kernel_size=[7, 7],
             padding="valid",
             activation=tf.nn.relu)
@@ -26,20 +29,20 @@ def cnn_model(features, labels, mode):
     
     conv2 = tf.layers.conv2d(
             inputs=pool1,
-            filters=16,
+            filters=32,
             kernel_size=[5, 5],
             padding="valid",
             activation=tf.nn.relu)
     
     pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2)
     
-    flatten = tf.reshape(pool2, [-1, 19 * 19 * 16])
+    flatten = tf.reshape(pool2, [-1, 19 * 19 * 32])
     
     dense = tf.layers.dense(inputs=flatten, units=1024, activation=tf.nn.relu)
     
     droplayer = tf.layers.dropout(
             inputs=dense,
-            rate=0.4,
+            rate=DROPOUT_RATE,
             training=mode == tf.estimator.ModeKeys.TRAIN)
     
     logits = tf.layers.dense(inputs=droplayer, units=5)
@@ -55,7 +58,7 @@ def cnn_model(features, labels, mode):
     loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
     
     if mode == tf.estimator.ModeKeys.TRAIN:
-        optimiser = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+        optimiser = tf.train.GradientDescentOptimizer(learning_rate=LEARNING_RATE)
         train_op = optimiser.minimize(loss=loss, global_step=tf.train.get_global_step())
         return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
     
