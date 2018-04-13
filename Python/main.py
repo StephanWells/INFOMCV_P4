@@ -21,6 +21,7 @@ import validation as val
 tf.logging.set_verbosity(tf.logging.INFO)
 
 BATCH_SIZE = 5
+CLASS_SIZE = 5
 
 class Action(Enum):
     BrushingTeeth = 0

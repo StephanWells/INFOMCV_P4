@@ -11,6 +11,7 @@ from __future__ import print_function
 # Imports
 import numpy as np
 import tensorflow as tf
+import main as m
 
 LEARNING_RATE = 0.001
 DROPOUT_RATE = 0.5
@@ -45,7 +46,7 @@ def cnn_model(features, labels, mode):
             rate=DROPOUT_RATE,
             training=mode == tf.estimator.ModeKeys.TRAIN)
     
-    logits = tf.layers.dense(inputs=droplayer, units=5)
+    logits = tf.layers.dense(inputs=droplayer, units=m.CLASS_SIZE)
     
     predictions = {
      "classes": tf.argmax(input=logits, axis=1),

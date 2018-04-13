@@ -17,6 +17,8 @@ def crossValidation(k):
     data, labels = list(zip(*label_data))
     fold_size = len(data) // k
     
+    overall_conf_mat = np.zeros((m.CLASS_SIZE, m.CLASS_SIZE, 1))
+    
     basepath = "/Programs/Repos/INFOMCV_P4/Python/tmp/cnn_model"
     
     for i in range(0, k):
@@ -48,23 +50,49 @@ def crossValidation(k):
         m.train(train_data_arr, train_labels_arr, model_path)
         results = m.predict(eval_data_arr, eval_labels_arr, model_path)
         
-        actual_labels = []
+        predicted_labels = []
         
         for result in results:
-            actual_labels.append(result['classes'])
+            predicted_labels.append(result['classes'])
             
-        conf_mat = generateConfusionMatrix(eval_labels, actual_labels)
-        outputConfusionMatrix(conf_mat)
+        conf_mat = generateConfusionMatrix(eval_labels, predicted_labels)
+        outputConfusionMatrix(conf_mat)        
+        np.add(overall_conf_mat, conf_mat)  
         
         print('Fold: ' + str(i))
+        
+    averaged_conf_mat = np.divide(np.float32(overall_conf_mat), k)
+    generatePerfMeasures(averaged_conf_mat)
 
-def generateConfusionMatrix(predicted_labels, actual_labels):
-    conf_mat = np.zeros((m.BATCH_SIZE, m.BATCH_SIZE, 1))
+def generatePerfMeasures(conf_mat):
+    outFile = open("scores.txt", "w")
     
-    for i in range(0, actual_labels):
-        for j in range(0, predicted_labels):
-            if actual_labels[i] == predicted_labels[j]:
-                conf_mat[i, j] += 1
+    for i in range(0, m.CLASS_SIZE):
+        tp = conf_mat[i, i]
+        
+        tpfp = 0
+        for j in range(0,5):
+            tpfp += conf_mat[i, j]
+        
+        tpfn = 0
+        for j in range(0,5):
+            tpfn += conf_mat[j, i]
+            
+        precision = tp / tpfp
+        recall = tp / tpfn
+        fscore = (2 * precision * recall) / (precision + recall)
+        
+        outFile.write("Precision: " + str(precision) + ";")
+        outFile.write("Recall: " + str(recall) + ";")
+        outFile.write("F-Score: " + str(fscore) + ";")
+    
+    outFile.close()
+
+def generateConfusionMatrix(actual_labels, predicted_labels):
+    conf_mat = np.zeros((m.CLASS_SIZE, m.CLASS_SIZE, 1))
+    
+    for i in range(0, len(actual_labels)):
+            conf_mat[actual_labels[i], predicted_labels[i]] += 1
     
     return conf_mat
 
