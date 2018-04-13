@@ -17,7 +17,11 @@ def crossValidation(k):
     accuracy = 0
     fold_size = len(data) // k
     
+    basepath = "/Programs/Repos/INFOMCV_P4/Python/tmp/cnn_model"
+    
     for i in range(0, k):
+        model_path = basepath + "_fold" + str(i)
+        
         end_offset = 1 if i < (k - 1) else 0
         left_data = data[0:fold_size * i]
         left_labels = labels[0:fold_size * i]
@@ -41,9 +45,10 @@ def crossValidation(k):
         eval_data = np.asarray(eval_data)
         eval_labels = np.asarray(eval_labels)
         
-        m.classify(train_data, train_labels, eval_data, eval_labels)
+        m.train(train_data, train_labels, model_path)
+        results = m.predict(eval_data, eval_labels, model_path)
         
-        print('Fold: ' + i)
+        print('Fold: ' + str(i))
     
     accuracy = accuracy / k
     

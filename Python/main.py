@@ -85,8 +85,8 @@ def getFrameMats(basepath):
     print("DONE.")
     return mats, labels
 
-def classify(train_data, train_labels, eval_data, eval_labels):
-    classifier = tf.estimator.Estimator(model_fn=cnn.cnn_model, model_dir="/tmp/cnn_model")
+def train(train_data, train_labels, model_path):
+    classifier = tf.estimator.Estimator(model_fn=cnn.cnn_model, model_dir=model_path)
     
     log_tensors = {"probabilities": "softmax_tensor"}
     logging_hook = tf.train.LoggingTensorHook(tensors=log_tensors, every_n_iter=50)
@@ -100,8 +100,11 @@ def classify(train_data, train_labels, eval_data, eval_labels):
     
     classifier.train(
             input_fn=train_input,
-            steps=20000,
+            steps=500,
             hooks=[logging_hook])
+    
+def evaluate(eval_data, eval_labels, model_path):
+    classifier = tf.estimator.Estimator(model_fn=cnn.cnn_model, model_dir=model_path)    
 
     eval_input = tf.estimator.inputs.numpy_input_fn(
             x={"x": eval_data},
@@ -111,6 +114,18 @@ def classify(train_data, train_labels, eval_data, eval_labels):
     
     eval_results = classifier.evaluate(input_fn=eval_input)
     print(eval_results)
+    
+def predict(eval_data, eval_labels, model_path):
+    classifier = tf.estimator.Estimator(model_fn=cnn.cnn_model, model_dir=model_path)
+    
+    eval_input = tf.estimator.inputs.numpy_input_fn(
+            x={"x": eval_data},
+            num_epochs=1,
+            shuffle=False)
+    
+    eval_results = classifier.predict(input_fn=eval_input)
+    
+    return eval_results
 
 def main():
 #    ucf_mats, ucf_labels = getFrameMats('data/ucf-101/')
