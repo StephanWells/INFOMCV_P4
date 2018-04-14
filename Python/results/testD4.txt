@@ -1,0 +1,5 @@
+Precision: [0.9312977];Recall: [0.905913];F-Score: [0.91843003]
+Precision: [0.8584475];Recall: [0.91713357];F-Score: [0.8868207]
+Precision: [0.9390244];Recall: [0.948379];F-Score: [0.9436785]
+Precision: [0.91699606];Recall: [0.90388006];F-Score: [0.9103908]
+Precision: [0.99615383];Recall: [0.9659014];F-Score: [0.98079437]

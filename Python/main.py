@@ -20,7 +20,7 @@ import validation as val
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
-BATCH_SIZE = 10
+BATCH_SIZE = 15
 CLASS_SIZE = 5
 
 class Action(Enum):
@@ -73,9 +73,9 @@ def getFrameMats(basepath):
             labels.append(action.value)
             mats.append(mat_orig)
             
-            #mat_flip = cv.flip(mat_orig, 1)            
-            #labels.append(action.value)
-            #mats.append(mat_flip)
+            mat_flip = cv.flip(mat_orig, 1)            
+            labels.append(action.value)
+            mats.append(mat_flip)
             
             #cv.namedWindow('testorig', cv.WINDOW_AUTOSIZE)
             #cv.imshow('testorig', mat_orig)
@@ -142,7 +142,7 @@ def main():
 #    
 #    print(eval_data)
 #    print(eval_labels)
-    val.crossValidation(2)
+    val.crossValidation(5)
     
     cv.waitKey(0)
     cv.destroyAllWindows()
