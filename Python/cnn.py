@@ -13,10 +13,10 @@ import numpy as np
 import tensorflow as tf
 import main as m
 
-LEARNING_RATE = 0.05
+LEARNING_RATE = 0.005
 DROPOUT_RATE = 0.5
 
-TOPOLOGY_TYPE = 1
+TOPOLOGY_TYPE = 3
 
 def cnn_model(features, labels, mode):
     inputLayer = tf.reshape(features["x"], [-1, 90, 90, 3])

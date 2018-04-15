@@ -57,6 +57,62 @@ def getFrameMatAt(path, pos):
     vid.release()
     return frame
 
+def getFrameMatWithResize(path):
+    vid = cv.VideoCapture(path)
+    
+    count = vid.get(cv.CAP_PROP_FRAME_COUNT)
+    vid.set(cv.CAP_PROP_POS_FRAMES, count / 2)
+    
+    _, frame = vid.read()    
+    vid.release()
+        
+    mat = cv.resize(frame, (90, 90))                
+    mat_orig = np.divide(np.float32(mat), 255)
+    
+    return mat_orig
+
+def getFrameMatWithResizeAt(path, pos):
+    vid = cv.VideoCapture(path)
+    
+    vid.set(cv.CAP_PROP_POS_FRAMES, pos)
+    
+    _, frame = vid.read()    
+    vid.release()
+        
+    mat = cv.resize(frame, (90, 90))                
+    mat_orig = np.divide(np.float32(mat), 255)
+    
+    return mat_orig
+    
+def getFrameMatsAll(basepath):
+    labels = []
+    mats = []
+    
+    print("Video loading...", end='')
+    for action in Action:
+        datapath = basepath + action.name + '/'
+        
+        for filename in os.listdir(datapath):
+            vid = cv.VideoCapture(datapath + filename)
+            vid.set(cv.CAP_PROP_POS_FRAMES, 0)
+            
+            while(vid.isOpened()):
+                ret, frame = vid.read()
+                
+                if frame is None:
+                    break
+                
+                if ret == True:
+                    mat = cv.resize(frame, (90, 90))                
+                    mat_orig = np.divide(np.float32(mat), 255) 
+                    labels.append(action.value)
+                    mats.append(mat_orig)                    
+                    
+            vid.release()
+    
+    print("DONE.")
+    return mats, labels
+
 def getFrameMats(basepath):
     labels = []
     mats = []
@@ -73,9 +129,9 @@ def getFrameMats(basepath):
             labels.append(action.value)
             mats.append(mat_orig)
             
-            mat_flip = cv.flip(mat_orig, 1)            
-            labels.append(action.value)
-            mats.append(mat_flip)
+            #mat_flip = cv.flip(mat_orig, 1)            
+            #labels.append(action.value)
+            #mats.append(mat_flip)
             
             #cv.namedWindow('testorig', cv.WINDOW_AUTOSIZE)
             #cv.imshow('testorig', mat_orig)
@@ -101,7 +157,7 @@ def train(train_data, train_labels, model_path):
     
     classifier.train(
             input_fn=train_input,
-            steps=10000,
+            steps=5000,
             hooks=[logging_hook])
     
 def evaluate(eval_data, eval_labels, model_path):
@@ -128,21 +184,11 @@ def predict(eval_data, eval_labels, model_path):
     
     return eval_results
 
-def main():
-#    ucf_mats, ucf_labels = getFrameMats('data/ucf-101/')
-#    train_data = np.asarray(ucf_mats)
-#    train_labels = np.asarray(ucf_labels)
-#    
-#    print(train_data)
-#    print(train_labels)
-#    
-#    own_mats, own_labels = getFrameMats('data/own/')
-#    eval_data = np.asarray(own_mats)
-#    eval_labels = np.asarray(own_labels)
-#    
-#    print(eval_data)
-#    print(eval_labels)
-    val.crossValidation(5)
+def main():   
+#    val.crossValidation(5)
+#    val.testSingleFrame(5)
+#    val.testAllFrame(5)  
+    val.predictSingleVideo('data/own/BrushingTeeth/03.avi', 10)
     
     cv.waitKey(0)
     cv.destroyAllWindows()

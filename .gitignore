@@ -261,3 +261,5 @@ __pycache__/
 *.pyc
 /Tensorflow_Base/Tensorflow_Base.vcxproj.filters
 /Tensorflow_Base/Tensorflow_Base.vcxproj
+/Python/tmp
+/Python/scores.txt

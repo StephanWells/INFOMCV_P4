@@ -10,6 +10,8 @@ import cv2 as cv
 import random
 import main as m
 import os
+    
+basepath = "/Programs/Repos/INFOMCV_P4/Python/tmp/cnn_model"
 
 def crossValidation(k):
     data, labels = m.getFrameMats('data/ucf-101/')
@@ -19,8 +21,6 @@ def crossValidation(k):
     fold_size = len(data) // k
     
     overall_conf_mat = np.zeros((m.CLASS_SIZE, m.CLASS_SIZE, 1))
-    
-    basepath = "/Programs/Repos/INFOMCV_P4/Python/tmp/cnn_model"
     
     for i in range(0, k):
         model_path = basepath + "_fold" + str(i)
@@ -64,6 +64,74 @@ def crossValidation(k):
     averaged_conf_mat = np.divide(np.float32(overall_conf_mat), k)
     outputConfusionMatrix(averaged_conf_mat) 
     generatePerfMeasures(averaged_conf_mat)
+
+def predictSingleVideo(path, frameNum=-1):
+    model_path = basepath + "_fold0"
+    
+    eval_data = []
+    eval_labels = []
+    
+    if frameNum == -1:
+        eval_data.append(m.getFrameMatWithResize(path))
+    else:
+        eval_data.append(m.getFrameMatWithResizeAt(path, frameNum))
+        
+    eval_data_arr = np.asarray(eval_data)
+    eval_labels_arr = np.asarray(eval_labels)
+    
+    results = m.predict(eval_data_arr, eval_labels_arr, model_path)
+    
+    for result in results:
+        label = m.Action(result['classes']).name
+        print('Predicted Class: ' + str(label))
+
+def testSingleFrame(k):
+    overall_conf_mat = np.zeros((m.CLASS_SIZE, m.CLASS_SIZE, 1))
+    
+    for i in range(0, k):    
+        model_path = basepath + "_fold" + str(i)
+        
+        eval_data, eval_labels = m.getFrameMats('data/own/')
+        eval_data_arr = np.asarray(eval_data)
+        eval_labels_arr = np.asarray(eval_labels)
+        
+        results = m.predict(eval_data_arr, eval_labels_arr, model_path)
+        
+        predicted_labels = []
+        
+        for result in results:
+            predicted_labels.append(result['classes'])
+            
+        conf_mat = generateConfusionMatrix(eval_labels, predicted_labels)
+        overall_conf_mat = np.add(overall_conf_mat, conf_mat)
+    
+    averaged_conf_mat = np.divide(np.float32(overall_conf_mat), k)
+    outputConfusionMatrix(averaged_conf_mat) 
+    generatePerfMeasures(averaged_conf_mat)
+    
+def testAllFrame(k):
+    overall_conf_mat = np.zeros((m.CLASS_SIZE, m.CLASS_SIZE, 1))
+    
+    for i in range(0, k):    
+        model_path = basepath + "_fold" + str(i)
+        
+        eval_data, eval_labels = m.getFrameMatsAll('data/own/')
+        eval_data_arr = np.asarray(eval_data)
+        eval_labels_arr = np.asarray(eval_labels)
+        
+        results = m.predict(eval_data_arr, eval_labels_arr, model_path)
+        
+        predicted_labels = []
+        
+        for result in results:
+            predicted_labels.append(result['classes'])
+            
+        conf_mat = generateConfusionMatrix(eval_labels, predicted_labels)
+        overall_conf_mat = np.add(overall_conf_mat, conf_mat)
+    
+    averaged_conf_mat = np.divide(np.float32(overall_conf_mat), k)
+    outputConfusionMatrix(averaged_conf_mat) 
+    generatePerfMeasures(averaged_conf_mat)   
 
 def generatePerfMeasures(conf_mat):
     outFile = open("scores.txt", "w")
